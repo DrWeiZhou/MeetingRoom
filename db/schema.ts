@@ -9,7 +9,6 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  vector,
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("user_role", ["admin", "teacher"]);
@@ -83,18 +82,6 @@ export const meetingParticipants = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   },
   (table) => [primaryKey({ columns: [table.meetingId, table.userId] })],
-);
-
-export const knowledgeDocuments = pgTable(
-  "knowledge_documents",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    content: text("content").notNull(),
-    embedding: vector("embedding", { dimensions: 1536 }),
-    deviceType: deviceTypeEnum("device_type").notNull().default("unknown"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [index("knowledge_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops"))],
 );
 
 export const usersRelations = relations(users, ({ many }) => ({

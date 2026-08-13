@@ -1,4 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 DO $$ BEGIN CREATE TYPE "user_role" AS ENUM ('admin', 'teacher'); EXCEPTION WHEN duplicate_object THEN null; END $$;
@@ -59,31 +58,3 @@ CREATE TABLE IF NOT EXISTS "meeting_participants" (
   "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE restrict,
   PRIMARY KEY ("meeting_id", "user_id")
 );
-
-CREATE TABLE IF NOT EXISTS "knowledge_documents" (
-  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  "content" text NOT NULL,
-  "embedding" vector(1536),
-  "device_type" "device_type" DEFAULT 'unknown' NOT NULL,
-  "created_at" timestamptz DEFAULT now() NOT NULL
-);
-CREATE INDEX IF NOT EXISTS "knowledge_embedding_idx" ON "knowledge_documents" USING hnsw ("embedding" vector_cosine_ops);
-
-CREATE OR REPLACE FUNCTION match_knowledge_documents(
-  query_embedding vector(1536),
-  match_threshold float DEFAULT 0.65,
-  match_count int DEFAULT 5
-)
-RETURNS TABLE (id uuid, content text, similarity float)
-LANGUAGE sql STABLE
-AS $$
-  SELECT
-    knowledge_documents.id,
-    knowledge_documents.content,
-    1 - (knowledge_documents.embedding <=> query_embedding) AS similarity
-  FROM knowledge_documents
-  WHERE knowledge_documents.embedding IS NOT NULL
-    AND 1 - (knowledge_documents.embedding <=> query_embedding) > match_threshold
-  ORDER BY knowledge_documents.embedding <=> query_embedding
-  LIMIT match_count;
-$$;

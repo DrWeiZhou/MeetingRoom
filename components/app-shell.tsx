@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   Atom,
   CalendarBlank,
-  ChatCircleDots,
   DoorOpen,
   GearSix,
   House,
@@ -16,7 +15,6 @@ import { Button } from "@/components/ui/button";
 const teacherLinks = [
   { href: "/dashboard", label: "总览", icon: House },
   { href: "/dashboard/book", label: "预约会议室", icon: CalendarBlank },
-  { href: "/dashboard/assistant", label: "AI 助手", icon: ChatCircleDots },
 ];
 
 const adminLinks = [
