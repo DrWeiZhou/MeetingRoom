@@ -1,5 +1,17 @@
 const HALF_HOUR = 30 * 60 * 1000;
 
+export function getHalfHourTimeSlots() {
+  return Array.from({ length: 48 }, (_, index) => {
+    const hours = Math.floor(index / 2).toString().padStart(2, "0");
+    const minutes = index % 2 === 0 ? "00" : "30";
+    return `${hours}:${minutes}`;
+  });
+}
+
+export function combineDateAndTime(date: string, time: string) {
+  return date && time ? `${date}T${time}` : "";
+}
+
 export function isHalfHourBoundary(date: Date) {
   return date.getSeconds() === 0 && date.getMilliseconds() === 0 && [0, 30].includes(date.getMinutes());
 }
