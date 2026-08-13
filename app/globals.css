@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #17211f;
+  --muted: #63706d;
+  --line: #dce4e1;
+  --paper: #f4f7f6;
+  --surface: #ffffff;
+  --accent: #087c68;
+  --accent-dark: #056353;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(rgba(16, 71, 61, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 71, 61, 0.035) 1px, transparent 1px),
+    var(--paper);
+  background-size: 32px 32px;
+}
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { background: #b8e6dc; color: #12342e; }
+
+@layer components {
+  .page-container { @apply mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10; }
+  .panel { @apply rounded-2xl border border-[#dce4e1] bg-white; }
+  .field-label { @apply text-sm font-semibold text-[#33413e]; }
+  .field-help { @apply text-xs leading-5 text-[#6c7875]; }
+  .focus-ring { @apply outline-none focus-visible:ring-2 focus-visible:ring-[#087c68] focus-visible:ring-offset-2; }
+}
