@@ -1,60 +1,31 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { SignJWT, jwtVerify } from "jose";
+import { getDb } from "@/db";
+import { users } from "@/db/schema";
+import { resolveActiveSessionUser } from "@/lib/auth-policy";
+import { getSession } from "@/lib/session";
 
-const COOKIE_NAME = "meeting_room_session";
-const SESSION_TTL = 60 * 60 * 24 * 7;
-
-export type SessionUser = {
-  id: string;
-  username: string;
-  displayName: string;
-  role: "admin" | "teacher";
-  mustChangePassword: boolean;
-};
-
-function getSecret() {
-  const value = process.env.AUTH_SECRET;
-  if (!value || value.length < 32) throw new Error("AUTH_SECRET 必须至少包含 32 个字符");
-  return new TextEncoder().encode(value);
-}
-
-export async function createSession(user: SessionUser) {
-  const token = await new SignJWT({ user })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${SESSION_TTL}s`)
-    .sign(getSecret());
-  const store = await cookies();
-  store.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: SESSION_TTL,
-    path: "/",
-  });
-}
-
-export async function destroySession() {
-  const store = await cookies();
-  store.delete(COOKIE_NAME);
-}
-
-export async function getSession(): Promise<SessionUser | null> {
-  try {
-    const token = (await cookies()).get(COOKIE_NAME)?.value;
-    if (!token) return null;
-    const { payload } = await jwtVerify(token, getSecret());
-    return payload.user as SessionUser;
-  } catch {
-    return null;
-  }
-}
+export { createSession, destroySession, getSession } from "@/lib/session";
+export type { SessionUser } from "@/lib/session";
 
 export async function requireUser(options?: { allowPasswordChange?: boolean }) {
-  const user = await getSession();
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const [account] = await getDb()
+    .select({
+      id: users.id,
+      username: users.username,
+      displayName: users.displayName,
+      role: users.role,
+      mustChangePassword: users.mustChangePassword,
+      isActive: users.isActive,
+    })
+    .from(users)
+    .where(eq(users.id, session.id))
+    .limit(1);
+  const user = resolveActiveSessionUser(session, account ?? null);
   if (!user) redirect("/login");
   if (user.mustChangePassword && !options?.allowPasswordChange) redirect("/change-password");
   return user;

@@ -52,7 +52,7 @@ DO $$ BEGIN
   ALTER TABLE "meetings" ADD CONSTRAINT "meetings_no_room_overlap"
   EXCLUDE USING gist ("room_id" WITH =, tstzrange("start_at", "end_at", '[)') WITH &&)
   WHERE ("status" = 'approved');
-EXCEPTION WHEN duplicate_object THEN null; END $$;
+EXCEPTION WHEN duplicate_object OR duplicate_table THEN null; END $$;
 
 CREATE TABLE IF NOT EXISTS "meeting_participants" (
   "meeting_id" uuid NOT NULL REFERENCES "meetings"("id") ON DELETE cascade,
