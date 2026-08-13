@@ -10,6 +10,8 @@ const teachers = [
   ["tianmiaoqing", "田淼清"], ["huyifan", "胡一帆"], ["sunjie", "孙洁"],
   ["lvqingxuan", "吕清轩"], ["zourui", "邹锐"], ["maguanguo", "马官国"],
   ["daiming", "戴铭"], ["huangchenxuan", "黄晨烜"],
+  ["zhouquanqiang", "周全强"], ["wangmengmeng", "王蒙蒙"],
+  ["wangxupeng", "王续澎"], ["sunzhongwei", "孙中卫"],
 ] as const;
 
 const rooms = [
