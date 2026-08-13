@@ -41,3 +41,18 @@ export async function listMeetingsInRange(start: Date, end: Date) {
     .where(inArray(meetingParticipants.meetingId, rows.map((row) => row.id)));
   return rows.map((row) => ({ ...row, participants: participantRows.filter((p) => p.meetingId === row.id).map((p) => p.displayName) }));
 }
+
+export async function getOwnedMeeting(id: string, applicantId: string) {
+  const db = getDb();
+  const [meeting] = await db
+    .select({ id: meetings.id, subject: meetings.subject, roomId: meetings.roomId, startAt: meetings.startAt, endAt: meetings.endAt })
+    .from(meetings)
+    .where(and(eq(meetings.id, id), eq(meetings.applicantId, applicantId), eq(meetings.status, "approved")))
+    .limit(1);
+  if (!meeting) return null;
+  const participants = await db
+    .select({ id: meetingParticipants.userId })
+    .from(meetingParticipants)
+    .where(eq(meetingParticipants.meetingId, meeting.id));
+  return { ...meeting, participantIds: participants.map((participant) => participant.id) };
+}
