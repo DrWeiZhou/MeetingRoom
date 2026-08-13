@@ -4,6 +4,7 @@ import {
   CalendarBlank,
   ChatCircleDots,
   DoorOpen,
+  GearSix,
   House,
   SignOut,
   UsersThree,
@@ -26,6 +27,7 @@ const adminLinks = [
 
 export function AppShell({ user, children }: { user: SessionUser; children: React.ReactNode }) {
   const links = user.role === "admin" ? [...teacherLinks, ...adminLinks] : teacherLinks;
+  const mobileLinks = user.role === "admin" ? [...teacherLinks, { href: "/dashboard/admin/meetings", label: "管理", icon: GearSix }] : teacherLinks;
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-[#d8e1de] bg-[#f9fbfa]/95 px-4 py-5 backdrop-blur lg:flex">
@@ -37,7 +39,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
         <header className="sticky top-0 z-20 border-b border-[#dce4e1] bg-[#f4f7f6]/92 backdrop-blur lg:hidden"><div className="flex h-16 items-center justify-between px-4"><Link href="/dashboard" className="flex items-center gap-2 font-semibold"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#123a32] text-white"><Atom size={20} /></span>会议室预定</Link><span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold">{user.displayName}</span></div></header>
         <main className="pb-24 lg:pb-10">{children}</main>
       </div>
-      <nav aria-label="移动端导航" className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 rounded-2xl border border-[#ccd8d4] bg-white/95 p-1.5 shadow-[0_12px_30px_rgba(20,49,43,0.16)] backdrop-blur lg:hidden">{teacherLinks.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="focus-ring flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-[#5e6b68] active:bg-[#e8f1ee]"><Icon size={20} />{label}</Link>)}</nav>
+      <nav aria-label="移动端导航" className={`fixed inset-x-3 bottom-3 z-40 grid ${user.role === "admin" ? "grid-cols-4" : "grid-cols-3"} rounded-2xl border border-[#ccd8d4] bg-white/95 p-1.5 shadow-[0_12px_30px_rgba(20,49,43,0.16)] backdrop-blur lg:hidden`}>{mobileLinks.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="focus-ring flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-[#5e6b68] active:bg-[#e8f1ee]"><Icon size={20} />{label}</Link>)}</nav>
     </div>
   );
 }

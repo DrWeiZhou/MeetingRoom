@@ -68,3 +68,22 @@ CREATE TABLE IF NOT EXISTS "knowledge_documents" (
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
 CREATE INDEX IF NOT EXISTS "knowledge_embedding_idx" ON "knowledge_documents" USING hnsw ("embedding" vector_cosine_ops);
+
+CREATE OR REPLACE FUNCTION match_knowledge_documents(
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.65,
+  match_count int DEFAULT 5
+)
+RETURNS TABLE (id uuid, content text, similarity float)
+LANGUAGE sql STABLE
+AS $$
+  SELECT
+    knowledge_documents.id,
+    knowledge_documents.content,
+    1 - (knowledge_documents.embedding <=> query_embedding) AS similarity
+  FROM knowledge_documents
+  WHERE knowledge_documents.embedding IS NOT NULL
+    AND 1 - (knowledge_documents.embedding <=> query_embedding) > match_threshold
+  ORDER BY knowledge_documents.embedding <=> query_embedding
+  LIMIT match_count;
+$$;

@@ -26,7 +26,7 @@ export function getWeekDays(start: Date) {
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(start.getTime() + index * 86400000);
     const parts = chinaDateParts(date);
-    return { date, key: `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`, label: WEEKDAYS[date.getUTCDay()], day: `${parts.month}/${parts.day}` };
+    return { date, key: `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`, label: parts.weekday || WEEKDAYS[index + 1], day: `${parts.month}/${parts.day}` };
   });
 }
 
