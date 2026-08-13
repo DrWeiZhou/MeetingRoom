@@ -26,13 +26,16 @@ export async function createRoomAction(_: ActionState, formData: FormData): Prom
   return { success: "会议室已添加" };
 }
 
-export async function updateRoomAction(formData: FormData) {
+export async function updateRoomAction(_: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-  const id = z.string().uuid().parse(formData.get("id"));
+  const id = z.string().uuid().safeParse(formData.get("id"));
   const parsed = roomSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return;
-  await getDb().update(rooms).set({ ...parsed.data, updatedAt: new Date() }).where(eq(rooms.id, id));
+  if (!id.success) return { error: "会议室不存在" };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  const updated = await getDb().update(rooms).set({ ...parsed.data, updatedAt: new Date() }).where(eq(rooms.id, id.data)).returning({ id: rooms.id });
+  if (!updated.length) return { error: "会议室不存在" };
   revalidatePath("/dashboard/admin/rooms");
+  return { success: "会议室信息已更新" };
 }
 
 export async function toggleRoomAction(formData: FormData) {

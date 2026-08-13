@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createRoomAction, createTeacherAction, rejectMeetingAction, updateTeacherAction } from "@/app/actions/admin";
+import { createRoomAction, createTeacherAction, rejectMeetingAction, updateRoomAction, updateTeacherAction } from "@/app/actions/admin";
 import type { ActionState } from "@/app/actions/meetings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,11 @@ function Feedback({ state }: { state: ActionState }) {
 export function CreateRoomForm() {
   const [state, action, pending] = useActionState(createRoomAction, {} as ActionState);
   return <form action={action} className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><label className="field-label" htmlFor="name">会议室名称</label><Input id="name" name="name" required placeholder="例如：协作会议室" /></div><div className="space-y-2"><label className="field-label" htmlFor="roomNumber">房间号</label><Input id="roomNumber" name="roomNumber" required placeholder="例如：1008" /></div><div className="space-y-2"><label className="field-label" htmlFor="capacity">容纳人数</label><Input id="capacity" name="capacity" required placeholder="例如：12 人" /></div><div className="space-y-2"><label className="field-label" htmlFor="facilities">设施</label><Input id="facilities" name="facilities" placeholder="投影、白板、视频会议" /></div><div className="sm:col-span-2"><Feedback state={state} /></div><Button disabled={pending} className="sm:col-span-2">{pending ? "正在添加…" : "添加会议室"}</Button></form>;
+}
+
+export function UpdateRoomForm({ room }: { room: { id: string; name: string; roomNumber: string; capacity: string; facilities: string } }) {
+  const [state, action, pending] = useActionState(updateRoomAction, {} as ActionState);
+  return <form action={action} className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_0.7fr_0.7fr_1.3fr_auto]"><input type="hidden" name="id" value={room.id} /><div className="space-y-1.5"><label className="text-xs font-semibold" htmlFor={`room-name-${room.id}`}>名称</label><Input id={`room-name-${room.id}`} name="name" defaultValue={room.name} required /></div><div className="space-y-1.5"><label className="text-xs font-semibold" htmlFor={`room-number-${room.id}`}>房间号</label><Input id={`room-number-${room.id}`} name="roomNumber" defaultValue={room.roomNumber} required /></div><div className="space-y-1.5"><label className="text-xs font-semibold" htmlFor={`room-capacity-${room.id}`}>容量</label><Input id={`room-capacity-${room.id}`} name="capacity" defaultValue={room.capacity} required /></div><div className="space-y-1.5"><label className="text-xs font-semibold" htmlFor={`room-facilities-${room.id}`}>设施</label><Input id={`room-facilities-${room.id}`} name="facilities" defaultValue={room.facilities} /></div><Button variant="secondary" type="submit" disabled={pending}>{pending ? "保存中…" : "保存"}</Button><div className="sm:col-span-2 lg:col-span-5"><Feedback state={state} /></div></form>;
 }
 
 export function CreateTeacherForm() {
