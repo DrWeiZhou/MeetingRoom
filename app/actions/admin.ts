@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { meetings, rooms, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
+import { usernameSchema } from "@/lib/user-validation";
 import type { ActionState } from "./meetings";
 
 const roomSchema = z.object({
@@ -41,7 +42,7 @@ export async function toggleRoomAction(formData: FormData) {
   revalidatePath("/dashboard/admin/rooms");
 }
 
-const teacherSchema = z.object({ username: z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_]{2,49}$/, "用户名需为 3–50 位英文字母或数字"), displayName: z.string().trim().min(2).max(30) });
+const teacherSchema = z.object({ username: usernameSchema, displayName: z.string().trim().min(2).max(30) });
 
 export async function createTeacherAction(_: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
@@ -53,6 +54,29 @@ export async function createTeacherAction(_: ActionState, formData: FormData): P
   await db.insert(users).values({ ...parsed.data, passwordHash: await bcrypt.hash("123456", 12), role: "teacher", mustChangePassword: true });
   revalidatePath("/dashboard/admin/teachers");
   return { success: "教师账号已创建，初始密码为 123456" };
+}
+
+export async function updateTeacherAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const id = z.string().uuid().safeParse(formData.get("id"));
+  const parsed = teacherSchema.safeParse(Object.fromEntries(formData));
+  if (!id.success) return { error: "教师账号不存在" };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  const db = getDb();
+  const [duplicate] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.username, parsed.data.username), ne(users.id, id.data)))
+    .limit(1);
+  if (duplicate) return { error: "用户名已存在" };
+  const updated = await db
+    .update(users)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(eq(users.id, id.data))
+    .returning({ id: users.id });
+  if (!updated.length) return { error: "教师账号不存在" };
+  revalidatePath("/dashboard/admin/teachers");
+  return { success: "教师信息已更新" };
 }
 
 export async function toggleTeacherAction(formData: FormData) {

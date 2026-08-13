@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createRoomAction, createTeacherAction, rejectMeetingAction } from "@/app/actions/admin";
+import { createRoomAction, createTeacherAction, rejectMeetingAction, updateTeacherAction } from "@/app/actions/admin";
 import type { ActionState } from "@/app/actions/meetings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,11 @@ export function CreateRoomForm() {
 export function CreateTeacherForm() {
   const [state, action, pending] = useActionState(createTeacherAction, {} as ActionState);
   return <form action={action} className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><label className="field-label" htmlFor="displayName">教师姓名</label><Input id="displayName" name="displayName" required /></div><div className="space-y-2"><label className="field-label" htmlFor="username">全拼用户名</label><Input id="username" name="username" required autoCapitalize="none" /></div><div className="sm:col-span-2"><Feedback state={state} /></div><Button disabled={pending} className="sm:col-span-2">{pending ? "正在创建…" : "创建教师账号"}</Button></form>;
+}
+
+export function UpdateTeacherForm({ teacher }: { teacher: { id: string; displayName: string; username: string } }) {
+  const [state, action, pending] = useActionState(updateTeacherAction, {} as ActionState);
+  return <form action={action} className="grid min-w-0 gap-3 sm:grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_auto]"><input type="hidden" name="id" value={teacher.id} /><div className="space-y-1.5"><label className="text-xs font-semibold" htmlFor={`displayName-${teacher.id}`}>姓名</label><Input id={`displayName-${teacher.id}`} name="displayName" defaultValue={teacher.displayName} required /></div><div className="space-y-1.5"><label className="text-xs font-semibold" htmlFor={`username-${teacher.id}`}>用户名</label><Input id={`username-${teacher.id}`} name="username" defaultValue={teacher.username} required autoCapitalize="none" /></div><Button variant="secondary" className="self-end" disabled={pending}>{pending ? "保存中…" : "保存"}</Button><div className="sm:col-span-3"><Feedback state={state} /></div></form>;
 }
 
 export function RejectMeetingForm({ id }: { id: string }) {

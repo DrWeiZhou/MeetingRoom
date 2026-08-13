@@ -9,11 +9,12 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { createSession, destroySession, requireUser } from "@/lib/auth";
 import { inferDeviceType } from "@/lib/device";
+import { usernameSchema } from "@/lib/user-validation";
 
 export type AuthState = { error?: string };
 
 const credentialsSchema = z.object({
-  username: z.string().trim().toLowerCase().min(3, "用户名至少 3 个字符").max(50),
+  username: usernameSchema,
   password: z.string().min(6, "密码至少 6 位").max(128),
 });
 
