@@ -1,0 +1,8 @@
+# Supabase CLI connection metadata is machine-specific.
+.temp/
+.branches/
+
+# Never commit local Supabase secrets.
+.env
+.env.*
+!.env.example
