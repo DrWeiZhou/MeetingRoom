@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combineDateAndTime, getHalfHourTimeSlots, rangesOverlap, validateTimeRange } from "./time";
+import { combineDateAndTime, getHalfHourTimeSlots, rangesOverlap, toChinaDateTimeInputValues, validateTimeRange } from "./time";
 
 describe("meeting time rules", () => {
   it("accepts multiple consecutive half-hour blocks", () => {
@@ -20,6 +20,13 @@ describe("meeting time rules", () => {
 
   it("combines the selected date and half-hour boundary for submission", () => {
     expect(combineDateAndTime("2026-08-17", "09:30")).toBe("2026-08-17T09:30");
+  });
+
+  it("formats stored timestamps for editing in China local time", () => {
+    expect(toChinaDateTimeInputValues(new Date("2026-08-17T01:30:00Z"))).toEqual({
+      date: "2026-08-17",
+      time: "09:30",
+    });
   });
 
   it("allows adjacent meetings but rejects overlap", () => {

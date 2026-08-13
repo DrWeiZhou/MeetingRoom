@@ -1,8 +1,9 @@
 "use server";
 
-import { and, eq, gt, inArray, lt } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { meetingParticipants, meetings, rooms, users } from "@/db/schema";
@@ -56,5 +57,63 @@ export async function createMeetingAction(_: ActionState, formData: FormData): P
   }
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/book");
-  return { success: "会议室已自动预约成功" };
+  redirect("/dashboard?booking=success");
+}
+
+export async function cancelMeetingAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const id = z.string().uuid().safeParse(formData.get("id"));
+  if (!id.success) return { error: "预约不存在" };
+  const result = await getDb()
+    .update(meetings)
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(and(eq(meetings.id, id.data), eq(meetings.applicantId, user.id), eq(meetings.status, "approved"), gt(meetings.startAt, new Date())))
+    .returning({ id: meetings.id });
+  if (!result.length) return { error: "预约不存在、已开始或无权删除" };
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-meetings");
+  return { success: "预约已删除" };
+}
+
+export async function updateMeetingAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const parsed = meetingSchema.extend({ id: z.string().uuid("预约不存在") }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  const startAt = fromChinaLocal(parsed.data.startAt);
+  const endAt = fromChinaLocal(parsed.data.endAt);
+  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) return { error: "时间格式不正确" };
+  const timeError = validateTimeRange(startAt, endAt);
+  if (timeError) return { error: timeError };
+  if (startAt < new Date()) return { error: "不能修改为已经过去的时间" };
+
+  const db = getDb();
+  const [room] = await db.select({ id: rooms.id }).from(rooms).where(and(eq(rooms.id, parsed.data.roomId), eq(rooms.isActive, true))).limit(1);
+  if (!room) return { error: "会议室不存在或已停用" };
+  const [conflict] = await db.select({ id: meetings.id }).from(meetings).where(and(ne(meetings.id, parsed.data.id), eq(meetings.roomId, room.id), eq(meetings.status, "approved"), lt(meetings.startAt, endAt), gt(meetings.endAt, startAt))).limit(1);
+  if (conflict) return { error: "该会议室在所选时段已被预约，请更换时间或会议室" };
+
+  const requestedParticipants = [...new Set(formData.getAll("participantIds").map(String))].filter((id) => id !== user.id);
+  const validParticipants = requestedParticipants.length
+    ? await db.select({ id: users.id }).from(users).where(and(inArray(users.id, requestedParticipants), eq(users.isActive, true)))
+    : [];
+  try {
+    const updated = await db.transaction(async (tx) => {
+      const result = await tx
+        .update(meetings)
+        .set({ subject: parsed.data.subject, roomId: room.id, startAt, endAt, updatedAt: new Date() })
+        .where(and(eq(meetings.id, parsed.data.id), eq(meetings.applicantId, user.id), eq(meetings.status, "approved"), gt(meetings.startAt, new Date())))
+        .returning({ id: meetings.id });
+      if (!result.length) return false;
+      await tx.delete(meetingParticipants).where(eq(meetingParticipants.meetingId, parsed.data.id));
+      if (validParticipants.length) await tx.insert(meetingParticipants).values(validParticipants.map(({ id }) => ({ meetingId: parsed.data.id, userId: id })));
+      return true;
+    });
+    if (!updated) return { error: "预约不存在、已开始或无权编辑" };
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "23P01") return { error: "刚刚有人预约了这个时段，请重新选择" };
+    throw error;
+  }
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-meetings");
+  redirect("/dashboard/my-meetings?updated=success");
 }
